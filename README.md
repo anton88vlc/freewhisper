@@ -25,7 +25,7 @@ This is not a giant polished product. It is the useful core: record, transcribe,
 You need macOS 14+, Xcode command line tools / Swift, and ideally `ffmpeg`.
 
 ```bash
-git clone https://github.com/pix0010/freewhisper.git
+git clone https://github.com/anton88vlc/freewhisper.git
 cd freewhisper
 Scripts/install-app.sh
 open /Applications/FreeWhisper.app
