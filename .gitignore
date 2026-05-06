@@ -1,0 +1,10 @@
+.DS_Store
+.build/
+build/
+*.app/
+*.xcodeproj/
+*.xcworkspace/
+*.xcuserstate
+DerivedData/
+.env
+secrets.env
