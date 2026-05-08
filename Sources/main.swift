@@ -1459,11 +1459,11 @@ struct DeepgramResponse: Codable {
 @MainActor
 final class HotKeyController {
     private let shortcut: ShortcutPreset
-    private let callback: @MainActor () -> Void
+    private let callback: () -> Void
     private var eventHandler: EventHandlerRef?
     private var hotKeyRef: EventHotKeyRef?
 
-    init(shortcut: ShortcutPreset, callback: @escaping @MainActor () -> Void) {
+    init(shortcut: ShortcutPreset, callback: @escaping () -> Void) {
         self.shortcut = shortcut
         self.callback = callback
     }
@@ -1484,7 +1484,9 @@ final class HotKeyController {
                 &hotKeyID
             )
             let controller = Unmanaged<HotKeyController>.fromOpaque(userData).takeUnretainedValue()
-            Task { @MainActor in controller.callback() }
+            DispatchQueue.main.async {
+                controller.callback()
+            }
             return noErr
         }, 1, &eventType, selfPtr, &eventHandler)
 
