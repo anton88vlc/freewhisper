@@ -895,8 +895,10 @@ final class AudioRecorder {
     private let engine = AVAudioEngine()
     private var file: AVAudioFile?
     private var currentURL: URL?
+    private var hasInputTap = false
 
     func start(url: URL) throws {
+        resetEngine()
         currentURL = url
         let input = engine.inputNode
         let inputFormat = input.outputFormat(forBus: 0)
@@ -906,18 +908,28 @@ final class AudioRecorder {
             guard let self, let file = self.file else { return }
             try? file.write(from: buffer)
         }
+        hasInputTap = true
 
         engine.prepare()
         try engine.start()
     }
 
     func stop() throws -> URL {
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
+        resetEngine()
         file = nil
         guard let url = currentURL else { throw FreeWhisperError.message("No active recording") }
         currentURL = nil
         return url
+    }
+
+    private func resetEngine() {
+        if hasInputTap {
+            engine.inputNode.removeTap(onBus: 0)
+            hasInputTap = false
+        }
+        if engine.isRunning {
+            engine.stop()
+        }
     }
 }
 
