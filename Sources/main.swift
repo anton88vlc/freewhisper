@@ -74,6 +74,7 @@ final class StatusController {
     private var transcriptionTimer: Timer?
     private var transcriptionFrame = 0
     private var menuActions: [MenuAction] = []
+    private var lastToggleAt = Date.distantPast
 
     init(
         store: RecordingStore,
@@ -96,6 +97,10 @@ final class StatusController {
     }
 
     func toggleRecording() {
+        let now = Date()
+        guard now.timeIntervalSince(lastToggleAt) > 0.25 else { return }
+        lastToggleAt = now
+
         if activeTranscriptionID != nil && !isRecording {
             NSSound.beep()
             return
@@ -892,15 +897,16 @@ final class RecordButton: NSButton {
 }
 
 final class AudioRecorder {
-    private let engine = AVAudioEngine()
+    private var engine: AVAudioEngine?
     private var file: AVAudioFile?
     private var currentURL: URL?
-    private var hasInputTap = false
 
     func start(url: URL) throws {
         resetEngine()
+        let newEngine = AVAudioEngine()
+        engine = newEngine
         currentURL = url
-        let input = engine.inputNode
+        let input = newEngine.inputNode
         let inputFormat = input.outputFormat(forBus: 0)
         file = try AVAudioFile(forWriting: url, settings: inputFormat.settings)
 
@@ -908,10 +914,9 @@ final class AudioRecorder {
             guard let self, let file = self.file else { return }
             try? file.write(from: buffer)
         }
-        hasInputTap = true
 
-        engine.prepare()
-        try engine.start()
+        newEngine.prepare()
+        try newEngine.start()
     }
 
     func stop() throws -> URL {
@@ -923,13 +928,15 @@ final class AudioRecorder {
     }
 
     private func resetEngine() {
-        if hasInputTap {
+        if let engine {
             engine.inputNode.removeTap(onBus: 0)
-            hasInputTap = false
+            if engine.isRunning {
+                engine.stop()
+            }
+            engine.reset()
         }
-        if engine.isRunning {
-            engine.stop()
-        }
+        engine = nil
+        file = nil
     }
 }
 
