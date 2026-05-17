@@ -75,6 +75,7 @@ final class StatusController {
     private var transcriptionFrame = 0
     private var menuActions: [MenuAction] = []
     private var lastToggleAt = Date.distantPast
+    private let minimumRecordingDuration = 0.5
 
     init(
         store: RecordingStore,
@@ -136,6 +137,14 @@ final class StatusController {
             isRecording = false
             stopRecordingTimer()
             setIdleTitle()
+
+            guard let duration = WavInfo.durationSeconds(url: url),
+                  duration >= minimumRecordingDuration else {
+                store.discardPendingRecording()
+                rebuildMenu()
+                return
+            }
+
             try store.markRecorded(audioURL: url)
             rebuildMenu()
             transcribeLatest(autoPaste: store.settings.autoPaste, target: targetApp)
@@ -1011,6 +1020,15 @@ final class RecordingStore {
         }
         pendingID = nil
         prune()
+    }
+
+    func discardPendingRecording() {
+        guard let id = pendingID else { return }
+        if let record = records.first(where: { $0.id == id }) {
+            try? fm.removeItem(at: record.directoryURL)
+        }
+        records.removeAll { $0.id == id }
+        pendingID = nil
     }
 
     func update(_ id: UUID, mutate: (inout RecordingItem) -> Void) {
